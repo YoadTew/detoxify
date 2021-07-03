@@ -1,24 +1,27 @@
+import argparse
 from detoxify import Detoxify
-import matplotlib.pyplot as plt
-import numpy as np
 import pickle
+from itertools import islice
+
+parser = argparse.ArgumentParser(description="training script",
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument("--batch_size", "-b", type=int, default=10000, help="Batch size")
+parser.add_argument('--txt_file', default='../reddit_text.txt', type=str, help='path to text')
+
+args = parser.parse_args()
 
 model = Detoxify('original', device='cuda')
+batch_size = args.batch_size
 
-with open('../reddit_text.txt') as f:
-    lines = f.readlines()[:1200]
+with open(args.txt_file) as f:
+    for batch_idx, batch_lines in enumerate(iter(lambda: tuple(islice(f, batch_size)), ())):
+        curr_batch = []
 
-batch_size = 500
+        for i, line in enumerate(batch_lines):
+            index = (batch_idx * batch_size) + i
 
-for batch in range(len(lines) // batch_size):
-    curr_batch = []
+            prediction = model.predict(line)
+            curr_batch.append((index, prediction, len(line)))
 
-    for i in range(batch_size * batch, (batch_size * batch) + batch_size):
-        line = lines[i]
-
-        prediction = model.predict(line)
-
-        curr_batch.append((i, prediction))
-
-    with open(f'batch_{batch}.pkl', 'wb') as handle:
-        pickle.dump(curr_batch, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        with open(f'batch_{batch_idx}.pkl', 'wb') as handle:
+            pickle.dump(curr_batch, handle, protocol=pickle.HIGHEST_PROTOCOL)
