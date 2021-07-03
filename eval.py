@@ -20,6 +20,9 @@ with open(args.txt_file) as f:
         for i, line in enumerate(batch_lines):
             index = (batch_idx * batch_size) + i
 
+            if index % 5000:
+                print(f'Curr line: {index}', flush=True)
+
             prediction = model.predict(line)
             curr_batch.append((index, prediction, len(line)))
 
